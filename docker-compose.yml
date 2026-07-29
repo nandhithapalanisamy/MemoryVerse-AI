@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: memoryverse_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: memoryverse_user
+      POSTGRES_PASSWORD: memoryverse_secure_password
+      POSTGRES_DB: memoryverse_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: memoryverse_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://memoryverse_user:memoryverse_secure_password@postgres:5432/memoryverse_db
+      - JWT_SECRET=supersecretjwtkeychangeinproduction1234567890
+      - UPLOAD_DIR=/app/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
+      - local_db_data:/app/database
+    depends_on:
+      - postgres
+
+  # React Frontend Client Service
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: memoryverse_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads_data:
+  local_db_data:
